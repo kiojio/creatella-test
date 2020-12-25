@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import axios from 'axios';
 
-const fetchData = async () => await axios.get('http://localhost:3000/api/products')
+const fetchData = async (page) => await axios.get(`http://localhost:3000/api/products?_page=${page}&_limit=10`)
   .then(res => ({
     error: false,
     dataProduct: res.data,
@@ -15,21 +15,20 @@ const fetchData = async () => await axios.get('http://localhost:3000/api/product
 );
 
 const Home = ({dataProduct, error}) => {
-  const [products, setProducts] = useState(dataProduct.slice(0, 10));
+  const [products, setProducts] = useState(dataProduct);
   const [isLoading, setIsLoading] = useState(false);
-  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
 
-  const refresh = () =>{
+  const refresh = async () =>{
     setIsLoading(true);
     let oldData = dataProduct;
-    let newData = dataProduct.slice(limit, limit+10);
-    let combine = [...products, ...newData];
-    console.log("check", {oldData, newData, products, combine});
-    setTimeout(() => {
-      setProducts(combine);
-      setLimit(limit+10);
-      setIsLoading(false);
-    }, 1000);
+    let fetchApi = await fetchData(page+1);
+    let newData = fetchApi;
+    let combine = [...products, ...newData.dataProduct];
+    console.log('check', {oldData, newData, combine})
+    setProducts(combine);
+    setPage(page+1);
+    setIsLoading(false);
   }
 
   return (
@@ -39,25 +38,27 @@ const Home = ({dataProduct, error}) => {
         <button
           onClick={refresh}
         >Test</button>
-        {!error && dataProduct && (
-            products.map((data, key) => (
-              <div className="card" style={{width: 288}}>
-                <p className="align-self-center">{data.face}</p>
-                <div className="card-body">
-                  <h5 className="card-title">{data.price}</h5>
-                  <p className="card-text">{data.date}</p>
+        <div className="row">
+          {!error && dataProduct && (
+              products.map((data, key) => (
+                <div className="card col-6 p-1" style={{width: 288}}>
+                  <p className="align-self-center text-center justify-content-center" style={{fontSize: data.size}}>{data.face}</p>
+                  <div className="card-body align-self-end" style={{marginTop: 'auto'}}>
+                    <h5 className="card-title">{data.price}</h5>
+                    <p className="card-text">{data.date}</p>
+                  </div>
                 </div>
-              </div>
-            ))
-          )
-        }
+              ))
+            )
+          }
+        </div>
       </div>
     </Layout>
   );
 }
 
 export const getStaticProps = async () => {
-  const data = await fetchData();
+  const data = await fetchData(1);
 
   return {
     props: data,
