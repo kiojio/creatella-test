@@ -1,7 +1,28 @@
 import Head from 'next/head';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
 import axios from 'axios';
+import styled, { keyframes } from "styled-components";
+
+const BounceAnimation = keyframes`
+  0% { margin-bottom: 0; }
+  50% { margin-bottom: 15px }
+  100% { margin-bottom: 0 }
+`;
+const DotWrapper = styled.div`
+  display: flex;
+  align-items: flex-end;
+`;
+const Dot = styled.div`
+  background-color: black;
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  margin: 0 5px;
+  /* Animation */
+  animation: ${BounceAnimation} 0.5s linear infinite;
+  animation-delay: ${props => props.delay};
+`;
 
 const fetchData = async (page, sort) => await axios.get(`http://localhost:3000/api/products?_page=${page}&limit=10${sort}`)
   .then(res => ({
@@ -21,17 +42,46 @@ const Home = ({dataProduct, error}) => {
   const [sort, setSort] = useState('');
   const [chosen, setChosen] = useState('');
   const listSort = ['price', 'size'];
+  const maxPage = Math.ceil(500 / 10);
+  const loader = useRef(null);
+
+  useEffect(() => {
+    let options = {
+      root: null,
+      rootMargin: "20px",
+      threshold: 1.0
+    };
+    // initialize IntersectionObserver
+    // and attaching to loading div
+      const observer = new IntersectionObserver(handleObserver, options);
+      if (loader.current) {
+        observer.observe(loader.current)
+      }
+
+  }, []);
+
+  const handleObserver = (entities) => {
+    const target = entities[0];
+    if (target.isIntersecting) {   
+        setPage((page) => page + 1)
+    }
+  }
+
+  useEffect(() => {
+    if(page > 1) {
+      refresh();
+    }
+  }, [page])
 
   const refresh = async () =>{
     setIsLoading(true);
     let oldData = dataProduct;
-    let fetchApi = await fetchData(page+1, sort);
+    let fetchApi = await fetchData(page, sort);
     let newData = fetchApi;
     let combine = [...products, ...newData.dataProduct];
-    console.log('check', {oldData, newData, combine})
     setProducts(combine);
-    setPage(page+1);
     setIsLoading(false);
+    console.log('check', {oldData, newData, combine, page})
   }
 
   const chosenSort = async(event) => {
@@ -48,6 +98,10 @@ const Home = ({dataProduct, error}) => {
     console.log("data sort", {mySort, dataProduct});
   }
 
+  const gotoTop = () => {
+    window.scrollTo(0,0);
+  }
+
   return (
     <Layout title="Product List">
       <div>
@@ -55,7 +109,14 @@ const Home = ({dataProduct, error}) => {
         <button
           onClick={refresh}
         >Test</button>
-        {isLoading ? <h1>Loading...</h1> : ''}
+        {isLoading ?
+          <DotWrapper>
+            <Dot delay="0s" />
+            <Dot delay=".1s" />
+            <Dot delay=".2s" />
+          </DotWrapper> 
+          : ''
+        }
         <div>
           <select 
             value={chosen}
@@ -69,7 +130,7 @@ const Home = ({dataProduct, error}) => {
             }            
           </select>
         </div>
-        <div className="row">
+        <div className="row w-full flex flex-wrap items-center justify-center">
           {!error && dataProduct && (
               products.map((data, key) => (
                 <div className="card col-6 p-1" style={{width: 288}}>
@@ -83,6 +144,14 @@ const Home = ({dataProduct, error}) => {
             )
           }
         </div>
+        {page !== maxPage ? (
+          <h2 className="align-Items-center" ref={loader}>Load More</h2>
+        ) : (
+          <div className="row">
+            <h2 className="align-self-center">~ end of catalogue ~</h2>
+            <button onClick={gotoTop}>Goto Top</button>
+          </div>
+        )}
       </div>
     </Layout>
   );
