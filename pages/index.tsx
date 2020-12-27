@@ -1,28 +1,6 @@
-import Head from 'next/head';
 import { useState, useEffect, useRef } from 'react';
 import Layout from '../components/Layout';
 import axios from 'axios';
-import styled, { keyframes } from "styled-components";
-
-const BounceAnimation = keyframes`
-  0% { margin-bottom: 0; }
-  50% { margin-bottom: 15px }
-  100% { margin-bottom: 0 }
-`;
-const DotWrapper = styled.div`
-  display: flex;
-  align-items: flex-end;
-`;
-const Dot = styled.div`
-  background-color: black;
-  border-radius: 50%;
-  width: 10px;
-  height: 10px;
-  margin: 0 5px;
-  /* Animation */
-  animation: ${BounceAnimation} 0.5s linear infinite;
-  animation-delay: ${props => props.delay};
-`;
 
 const fetchData = async (page, sort) => await axios.get(`http://localhost:3000/api/products?_page=${page}&limit=10${sort}`)
   .then(res => ({
@@ -44,6 +22,10 @@ const Home = ({dataProduct, error}) => {
   const listSort = ['price', 'size'];
   const maxPage = Math.ceil(500 / 10);
   const loader = useRef(null);
+  const adsValue = Math.floor(Math.random()*1000);
+  const monthNames = ["January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
   useEffect(() => {
     let options = {
@@ -62,10 +44,16 @@ const Home = ({dataProduct, error}) => {
 
   const handleObserver = (entities) => {
     const target = entities[0];
-    if (target.isIntersecting) {   
-        setPage((page) => page + 1)
+    if (target.isIntersecting) {
+      setIsLoading(true);
     }
   }
+
+  useEffect(() => {
+    if(isLoading){
+      setPage((page) => page + 1)
+    }
+  }, [isLoading])
 
   useEffect(() => {
     if(page > 1) {
@@ -74,15 +62,26 @@ const Home = ({dataProduct, error}) => {
   }, [page])
 
   const refresh = async () =>{
-    setIsLoading(true);
     let oldData = dataProduct;
     let fetchApi = await fetchData(page, sort);
     let newData = fetchApi;
     let combine = [...products, ...newData.dataProduct];
+    if(page % 2 == 0){
+      combine = [...combine, {ads: `http://localhost:3000/ads/?r=${adsValue}`}]
+    }
     setProducts(combine);
     setIsLoading(false);
     console.log('check', {oldData, newData, combine, page})
   }
+
+  const formatCurrency = (value: number) =>
+    "$" + value.toFixed(2).replace(/,/g, " ").replace(".", ",");
+
+  const formatDate = (value: string) => {
+    let data = new Date(value)
+    return monthNames[data.getMonth()]+' '+data.getDay()+', '+data.getFullYear()
+  }
+    
 
   const chosenSort = async(event) => {
     setIsLoading(true);
@@ -101,46 +100,59 @@ const Home = ({dataProduct, error}) => {
   const gotoTop = () => {
     window.scrollTo(0,0);
   }
+  
+  const styleSort = {
+    flex:1,
+    padding: 10, 
+    margin:10, 
+    borderRadius: 10,
+    backgroundColor: 'white'
+  }
 
   return (
     <Layout title="Product List">
       <div>
         <h1>Product</h1>
-        <button
-          onClick={refresh}
-        >Test</button>
-        {isLoading ?
-          <DotWrapper>
-            <Dot delay="0s" />
-            <Dot delay=".1s" />
-            <Dot delay=".2s" />
-          </DotWrapper> 
-          : ''
-        }
-        <div>
-          <select 
-            value={chosen}
-            onChange={chosenSort}
-          >
-            <option value="">Choose sort</option>
-            {
-              listSort.map((data, key) => (
-                <option value={data} selected={data == chosen}>{data}</option>
-              ))
-            }            
-          </select>
+        <div className="d-flex">
+          <div>
+            {isLoading ?
+              <h3>Loading ...</h3>
+              :
+              '' 
+            }
+          </div>
+          <div className="ml-auto">
+            <select 
+              value={chosen}
+              onChange={chosenSort}
+              style={styleSort}
+            >
+              <option value="">Choose sort</option>
+              {
+                listSort.map((data, key) => (
+                  <option value={data} selected={data == chosen}>{data}</option>
+                ))
+              }            
+            </select>
+          </div>
         </div>
-        <div className="row w-full flex flex-wrap items-center justify-center">
+        <div className="row">
           {!error && dataProduct && (
-              products.map((data, key) => (
-                <div className="card col-6 p-1" style={{width: 288}}>
-                  <p className="align-self-center text-center justify-content-center" style={{fontSize: data.size}}>{data.face}</p>
-                  <div className="card-body align-self-end" style={{marginTop: 'auto'}}>
-                    <h5 className="card-title">{data.price}</h5>
-                    <p className="card-text">{data.date}</p>
+              products.map((data, key) => {
+                if(data.hasOwnProperty('ads')) {
+                  return <div key={key} className="card col-6 p-1">
+                    <img src={data.ads}/>
                   </div>
-                </div>
-              ))
+                } else {
+                  return <div key={key} className="card col-6 p-1">
+                    <p className="align-self-center text-center justify-content-center" style={{fontSize: data.size}}>{data.face}</p>
+                    <div className="card-body" style={{marginTop: 'auto'}}>
+                      <h5 className="card-title">{formatCurrency(data.price)}</h5>
+                      <p className="card-text">{formatDate(data.date)}</p>
+                    </div>
+                  </div>
+                }
+              })
             )
           }
         </div>
