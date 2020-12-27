@@ -1,15 +1,18 @@
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useEffect, useState } from 'react'
 import Head from 'next/head'
 
 type Props = {
-    children?: ReactNode
-    title?: string
+  children?: ReactNode
+  title?: string
 }
 
 const adsValue = Math.floor(Math.random()*1000); 
 
-const Layout = ({ children, title = 'This is the default title' }: Props) => (
-    <div>
+const Layout = ({ children, title = 'This is the default title' }: Props) => {
+    const [loading, setLoading] = useState(true);
+    
+    return(
+      <div>
         <Head>
             <title>{title}</title>
             <meta charSet="utf-8" />
@@ -20,12 +23,19 @@ const Layout = ({ children, title = 'This is the default title' }: Props) => (
 
             <p>Here you're sure to find a bargain on some of the finest ascii available to purchase. Be sure to peruse our selection of ascii faces in an exciting range of sizes and prices.</p>
 
-            <p>But first, a word from our sponsors:</p><img className="ad" src={`http://localhost:3000/ads/?r=${adsValue}`}/>
+            <p>But first, a word from our sponsors:</p>
+            <h3>{loading ? 'Loading ads ...':''}</h3>
+            <img 
+              className="ad" 
+              src={`http://localhost:3000/ads/?r=${adsValue}`}
+              onLoad={() => {setLoading(false)}}
+            />   
         </header>
         <section className="main container">
             {children}
         </section>
-    </div>
-)
+      </div>
+    )
+}
 
 export default Layout
