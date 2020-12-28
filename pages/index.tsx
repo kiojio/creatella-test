@@ -144,11 +144,15 @@ const Home = ({dataProduct, error}) => {
                     <img src={data.ads}/>
                   </div>
                 } else {
-                  return <div key={key} className="card col-6 p-1">
+                  return <div key={key} className="card col-6 p-0">
                     <p className="align-self-center text-center justify-content-center" style={{fontSize: data.size}}>{data.face}</p>
-                    <div className="card-body" style={{marginTop: 'auto'}}>
-                      <h5 className="card-title">{formatCurrency(data.price)}</h5>
-                      <p className="card-text">{formatDate(data.date)}</p>
+                    <div className="card-body d-flex flex-column">
+                      <div
+                        className="mt-auto"
+                      >
+                        <h5 className="card-title">{formatCurrency(data.price)}</h5>
+                        <p className="card-text">{formatDate(data.date)}</p>
+                      </div>
                     </div>
                   </div>
                 }
