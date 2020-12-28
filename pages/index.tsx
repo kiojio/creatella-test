@@ -16,6 +16,7 @@ const fetchData = async (page, sort) => await axios.get(`http://localhost:3000/a
 const Home = ({dataProduct, error}) => {
   const [products, setProducts] = useState(dataProduct);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingSort, setLoadingSort] = useState(false);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState('');
   const [chosen, setChosen] = useState('');
@@ -84,7 +85,7 @@ const Home = ({dataProduct, error}) => {
     
 
   const chosenSort = async(event) => {
-    setIsLoading(true);
+    setLoadingSort(true);
     let value = event.target.value;
     let mySort = '';
     mySort = `&_sort=`+value;
@@ -93,7 +94,7 @@ const Home = ({dataProduct, error}) => {
     setProducts(dataProduct);
     setSort(mySort);
     setChosen(value);
-    setIsLoading(false);
+    setLoadingSort(false);
     console.log("data sort", {mySort, dataProduct});
   }
 
@@ -112,10 +113,9 @@ const Home = ({dataProduct, error}) => {
   return (
     <Layout title="Product List">
       <div>
-        <h1>Product</h1>
         <div className="d-flex">
           <div>
-            {isLoading ?
+            {loadingSort ?
               <h3>Loading ...</h3>
               :
               '' 
